@@ -1,0 +1,10 @@
+.DS_Store
+
+# Local agent/editor state and disposable worktrees.
+.claude/
+
+# Future app/build outputs.
+dist/
+build/
+node_modules/
+src-tauri/target/

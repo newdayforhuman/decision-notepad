@@ -1,0 +1,239 @@
+/* Decision Notepad — Design Tokens
+ *
+ * Drop this into a global stylesheet and reference the custom properties
+ * from your components. All colors are in oklch so dark mode is a hue
+ * shift, not a re-design.
+ *
+ * Naming:
+ *   --color-surface-*   backgrounds (page, raised, sunken)
+ *   --color-ink-*       text + iconography
+ *   --color-rule-*      borders, dividers, hairlines
+ *   --color-marker-*    active marker assignments
+ *   --marker-*-*        8 user-facing marker color choices
+ *   --color-accent      the SINGLE action color (not green)
+ *   --space-*           4px-based spacing scale
+ *   --type-*            type ramp
+ *   --radius-*          corner radii
+ *   --shadow-*          elevation
+ *   --motion-*          duration + easing
+ */
+
+:root {
+  /* ---- Surfaces (paper palette) ---- */
+  --color-surface-page:    oklch(98.2% 0.008 80);   /* warm cream, the page */
+  --color-surface-raised:  oklch(99.4% 0.005 80);   /* row hover, panels */
+  --color-surface-sunken:  oklch(96.0% 0.010 80);   /* sidebar, footer */
+  --color-surface-selected:oklch(94.2% 0.014 80);   /* selected row band */
+
+  /* ---- Ink (text + glyphs) ---- */
+  --color-ink-strong:      oklch(22% 0.012 60);     /* titles, primary text */
+  --color-ink-body:        oklch(32% 0.010 60);     /* notes body */
+  --color-ink-muted:       oklch(52% 0.008 60);     /* meta, captions */
+  --color-ink-faint:       oklch(68% 0.006 60);     /* timestamps, hints */
+  --color-ink-inverse:     oklch(98% 0.005 80);     /* on dark/accent fills */
+
+  /* Semantic alias: secondary reference info (timestamps, source meta).
+     Use this rather than --color-ink-muted when the content is purely
+     reference, never a focal point. */
+  --color-text-meta:       var(--color-ink-faint);
+
+  /* ---- Rules / borders ---- */
+  --color-rule-hairline:   oklch(90% 0.008 80);     /* row dividers */
+  --color-rule-strong:     oklch(82% 0.010 80);     /* panel edges */
+  --color-rule-focus:      oklch(55% 0.14 250);     /* keyboard focus ring */
+
+  /* ---- Marker palette (4 markers, 8 readable color choices) ---- */
+  --marker-green-fill:  #d9e6cf;
+  --marker-green-text:  #2f4d28;
+  --marker-orange-fill: #efcdb8;
+  --marker-orange-text: #6a2a10;
+  --marker-yellow-fill: #ead496;
+  --marker-yellow-text: #5a4309;
+  --marker-blue-fill:   #c5dcef;
+  --marker-blue-text:   #0e3e6b;
+  --marker-purple-fill: #cfc8e6;
+  --marker-purple-text: #2c225e;
+  --marker-teal-fill:   #a9cdb9;
+  --marker-teal-text:   #0c3a2c;
+  --marker-gray-fill:   #d4d2c6;
+  --marker-gray-text:   #2d2c25;
+  --marker-red-fill:    #e2a895;
+  --marker-red-text:    #5a1808;
+
+  /* Active marker assignments, overridden by app.js when the user changes colors. */
+  --color-marker-keep:     var(--marker-green-text);
+  --color-marker-reject:   var(--marker-orange-text);
+  --color-marker-question: var(--marker-yellow-text);
+  --color-marker-verify:   var(--marker-blue-text);
+
+  --color-marker-keep-tint:     var(--marker-green-fill);
+  --color-marker-reject-tint:   var(--marker-orange-fill);
+  --color-marker-question-tint: var(--marker-yellow-fill);
+  --color-marker-verify-tint:   var(--marker-blue-fill);
+
+  /* ---- Accent (THE action color; deliberately not green) ---- */
+  --color-accent:          oklch(45% 0.14 265);     /* deep indigo */
+  --color-accent-hover:    oklch(40% 0.16 265);
+  --color-accent-tint:     oklch(94% 0.030 265);
+  --color-accent-on:       oklch(98% 0.005 265);    /* text on accent fill */
+
+  /* ---- Destructive ---- */
+  --color-danger:          oklch(50% 0.16 28);
+  --color-danger-tint:     oklch(94% 0.030 28);
+
+  /* ---- Spacing (4px base) ---- */
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ---- Type ---- */
+  --font-ui:    "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --font-body:  "IBM Plex Serif", Charter, Georgia, serif;
+  --font-mono:  "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --type-xs:    11px;   /* shortcut hints, footer chrome */
+  --type-sm:    13px;   /* meta, captions, sidebar items */
+  --type-base:  14px;   /* UI default */
+  --type-md:    15px;   /* entry titles, note body */
+  --type-lg:    18px;   /* section headers */
+  --type-xl:    22px;   /* page title (rarely shown) */
+
+  --leading-tight:  1.25;
+  --leading-snug:   1.4;
+  --leading-normal: 1.55;
+  --leading-relaxed:1.7;
+
+  --weight-regular: 400;
+  --weight-medium:  500;
+  --weight-semibold:600;
+
+  /* ---- Radius ---- */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-pill: 999px;
+
+  /* ---- Elevation (used sparingly — this is a document, not cards) ---- */
+  --shadow-1: 0 1px 0 0 oklch(0% 0 0 / 0.04);
+  --shadow-2: 0 2px 8px -2px oklch(0% 0 0 / 0.06),
+              0 1px 0 0 oklch(0% 0 0 / 0.04);
+  --shadow-popover: 0 8px 24px -8px oklch(0% 0 0 / 0.18),
+                    0 0 0 1px oklch(0% 0 0 / 0.06);
+
+  /* ---- Motion ---- */
+  --motion-fast:   120ms;
+  --motion-base:   180ms;
+  --motion-slow:   260ms;
+  --ease-standard: cubic-bezier(0.2, 0.0, 0.0, 1.0);
+  --ease-emphasis: cubic-bezier(0.3, 0.0, 0.0, 1.0);
+
+  /* ---- Layout ---- */
+  --layout-sidebar-w:        220px;   /* down from ~280 */
+  --layout-detail-w:         360px;   /* on demand only */
+  --layout-row-min-h:        56px;
+  --layout-row-pad-y:        12px;
+  --layout-content-max:      980px;   /* list column readable max */
+  --layout-margin-glyph-w:   28px;    /* left margin where marker glyph sits */
+}
+
+/* ---- Dark mode: neutral, low-glare desktop palette ---- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-surface-page:    oklch(16.5% 0.003 70);
+    --color-surface-raised:  oklch(20.5% 0.003 70);
+    --color-surface-sunken:  oklch(13% 0.003 70);
+    --color-surface-selected:oklch(23% 0.004 70);
+
+    --color-ink-strong:      oklch(94% 0.006 75);
+    --color-ink-body:        oklch(83% 0.006 75);
+    --color-ink-muted:       oklch(62% 0.006 75);
+    --color-ink-faint:       oklch(48% 0.006 75);
+
+    --color-rule-hairline:   oklch(26% 0.004 70);
+    --color-rule-strong:     oklch(35% 0.004 70);
+
+    --marker-green-fill:  #1f301f;
+    --marker-green-text:  #a9d19f;
+    --marker-orange-fill: #3a2118;
+    --marker-orange-text: #e4a16c;
+    --marker-yellow-fill: #332c17;
+    --marker-yellow-text: #d7b95a;
+    --marker-blue-fill:   #172a3c;
+    --marker-blue-text:   #86b8e8;
+    --marker-purple-fill: #251f38;
+    --marker-purple-text: #b8a8e6;
+    --marker-teal-fill:   #17332c;
+    --marker-teal-text:   #7bc8aa;
+    --marker-gray-fill:   #2b2a25;
+    --marker-gray-text:   #c2bfb3;
+    --marker-red-fill:    #3a1815;
+    --marker-red-text:    #e08772;
+
+    --color-marker-keep-tint:     oklch(28% 0.040 145);
+    --color-marker-reject-tint:   oklch(28% 0.040 25);
+    --color-marker-question-tint: oklch(30% 0.040 85);
+    --color-marker-verify-tint:   oklch(28% 0.040 230);
+
+    --color-accent:          oklch(72% 0.14 265);
+    --color-accent-hover:    oklch(78% 0.16 265);
+    --color-accent-tint:     oklch(28% 0.050 265);
+    --color-accent-on:       oklch(15% 0.010 265);
+  }
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --color-surface-page:    oklch(16.5% 0.003 70);
+  --color-surface-raised:  oklch(20.5% 0.003 70);
+  --color-surface-sunken:  oklch(13% 0.003 70);
+  --color-surface-selected:oklch(23% 0.004 70);
+
+  --color-ink-strong:      oklch(94% 0.006 75);
+  --color-ink-body:        oklch(83% 0.006 75);
+  --color-ink-muted:       oklch(62% 0.006 75);
+  --color-ink-faint:       oklch(48% 0.006 75);
+
+  --color-rule-hairline:   oklch(26% 0.004 70);
+  --color-rule-strong:     oklch(35% 0.004 70);
+
+  --marker-green-fill:  #1f301f;
+  --marker-green-text:  #a9d19f;
+  --marker-orange-fill: #3a2118;
+  --marker-orange-text: #e4a16c;
+  --marker-yellow-fill: #332c17;
+  --marker-yellow-text: #d7b95a;
+  --marker-blue-fill:   #172a3c;
+  --marker-blue-text:   #86b8e8;
+  --marker-purple-fill: #251f38;
+  --marker-purple-text: #b8a8e6;
+  --marker-teal-fill:   #17332c;
+  --marker-teal-text:   #7bc8aa;
+  --marker-gray-fill:   #2b2a25;
+  --marker-gray-text:   #c2bfb3;
+  --marker-red-fill:    #3a1815;
+  --marker-red-text:    #e08772;
+
+  --color-marker-keep-tint:     oklch(28% 0.040 145);
+  --color-marker-reject-tint:   oklch(28% 0.040 25);
+  --color-marker-question-tint: oklch(30% 0.040 85);
+  --color-marker-verify-tint:   oklch(28% 0.040 230);
+
+  --color-accent:          oklch(72% 0.14 265);
+  --color-accent-hover:    oklch(78% 0.16 265);
+  --color-accent-tint:     oklch(28% 0.050 265);
+  --color-accent-on:       oklch(15% 0.010 265);
+}

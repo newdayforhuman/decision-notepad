@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Decision Notepad</title>
+    <link rel="icon" href="data:,">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="tokens.css">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <div class="app-shell" id="appShell">
+
+      <!-- Left rail: sidebar -->
+      <aside class="sidebar" aria-label="Filters and navigation">
+        <div class="sidebar-top">
+          <div class="notepad-switcher">
+            <input id="sessionTitle" class="notepad-title-input" type="text" aria-label="Notepad title">
+          </div>
+          <div class="sidebar-search-wrap">
+            <input id="searchInput" class="sidebar-search" type="search" placeholder="Search titles and notes" aria-label="Search entries">
+          </div>
+          <button id="goalBtn" class="sidebar-goal-btn" type="button" aria-expanded="false">
+            <span class="sidebar-goal-label">Goal</span>
+            <span id="goalPreview" class="sidebar-goal-preview">Add goal</span>
+          </button>
+        </div>
+
+        <nav class="sidebar-filters" aria-label="Filter entries">
+          <div class="filter-section" id="impressionsSection">
+            <div class="filter-section-header">
+              <span>IMPRESSIONS</span>
+              <button class="legend-trigger" id="legendBtn" type="button" aria-label="Marker legend" aria-expanded="false">?</button>
+            </div>
+            <div id="impressionFilters" class="filter-list"></div>
+          </div>
+
+          <div class="filter-section" id="propertiesSection">
+            <div class="filter-section-header">
+              <span>PROPERTIES</span>
+            </div>
+            <div id="propertyFilters" class="filter-list"></div>
+          </div>
+        </nav>
+
+
+        <!-- Legend popover (read-only) -->
+        <div id="legendPopover" class="legend-popover hidden" role="dialog" aria-label="Marker legend">
+          <div class="legend-header">
+            <strong>Markers</strong>
+            <button class="icon-button" id="closeLegendBtn" type="button" aria-label="Close legend">×</button>
+          </div>
+          <table class="legend-table"><tbody id="legendTableBody"></tbody></table>
+        </div>
+
+        <!-- Goal editor popover -->
+        <div id="goalEditor" class="legend-popover hidden" role="dialog" aria-label="Edit goal">
+          <div class="legend-header">
+            <strong>Goal</strong>
+            <button class="icon-button" id="closeGoalEditorBtn" type="button" aria-label="Close goal editor">×</button>
+          </div>
+          <textarea id="goalText" class="goal-textarea" rows="5" placeholder="What are you trying to decide, find, compare, or verify?"></textarea>
+        </div>
+
+      </aside>
+
+      <!-- Main column: top bar + entry list -->
+      <div class="main-col">
+        <header class="top-bar">
+          <div class="capture-wrap">
+            <span class="capture-glyph" aria-hidden="true">⊕</span>
+            <input id="captureInput" class="capture-input" type="text"
+              placeholder="New entry — start typing…" aria-label="Create new entry" autocomplete="off">
+          </div>
+          <div class="top-bar-end">
+            <button class="icon-button top-bar-icon" id="scratchPadBtn" type="button" aria-label="Scratch pad (S)" title="Scratch pad (S)">
+              <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M2.5 13.5l1-3 7-7 2 2-7 7-3 1z"/>
+                <path d="M10.5 3.5l2 2"/>
+              </svg>
+            </button>
+            <button class="icon-button top-bar-icon" id="pinBtn" type="button" aria-label="Pin window above other apps" title="Pin window above other apps (Mod+Shift+P)" aria-pressed="false">
+              <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M10 2l4 4-2.5 1-1.5 3.5L6 6.5l3.5-1.5L10 2z"/>
+                <path d="M6.5 9.5L2 14"/>
+              </svg>
+            </button>
+          </div>
+        </header>
+
+        <div id="entryList" class="entry-list" role="list" aria-label="Entries" aria-live="polite"></div>
+
+        <!-- Notes view: full-width single-entry editor (overlays main column) -->
+        <section class="notes-view hidden" id="notesView" aria-label="Notes editor">
+          <header class="notes-view-header">
+            <button class="icon-button" id="notesViewBack" type="button" aria-label="Back to list">←</button>
+            <span class="notes-view-meta" id="notesViewMeta"></span>
+            <span class="notes-view-hint">Esc to close</span>
+            <button class="icon-button" id="notesViewClose" type="button" aria-label="Close notes view">×</button>
+          </header>
+          <input id="notesViewTitle" class="notes-view-title" type="text" placeholder="Untitled" aria-label="Title" autocomplete="off">
+          <textarea id="notesViewBody" class="notes-view-body" placeholder="Write or paste anything…" aria-label="Note body"></textarea>
+          <footer class="notes-view-footer">
+            <label class="notes-view-source" for="notesViewSource">
+              <span class="notes-view-source-label">Reference</span>
+              <input id="notesViewSource" class="notes-view-source-input" type="text" placeholder="URL, doc #, MLS #, citation, phone — anything you can point back to" autocomplete="off">
+            </label>
+          </footer>
+        </section>
+      </div>
+
+      <!-- Right panel: detail (closed by default) -->
+      <aside class="detail-panel hidden" id="detailPanel" aria-label="Entry detail">
+        <header class="detail-panel-header">
+          <div class="detail-panel-meta">
+            <div id="detailPanelTitle" class="detail-panel-title"></div>
+            <div id="detailPanelStatus" class="detail-panel-status"></div>
+            <div id="detailPanelTimestamp" class="detail-panel-timestamp"></div>
+          </div>
+          <button class="icon-button" id="closeDetailBtn" type="button" aria-label="Close detail">×</button>
+        </header>
+
+        <div class="detail-panel-body">
+          <div class="detail-field">
+            <label class="detail-label" for="detailTitleInput">TITLE</label>
+            <input id="detailTitleInput" class="detail-input" type="text">
+          </div>
+
+          <div class="detail-field">
+            <label class="detail-label" for="detailBodyInput">NOTE</label>
+            <textarea id="detailBodyInput" class="detail-textarea" rows="6"></textarea>
+          </div>
+
+          <div class="detail-field">
+            <label class="detail-label">MARKER</label>
+            <div class="marker-segmented" id="markerSegmented" role="group" aria-label="Set marker"></div>
+            <button class="clear-marker-link hidden" id="clearMarkerBtn" type="button">Clear marker</button>
+          </div>
+
+          <div class="detail-field">
+            <label class="detail-label" for="detailSourceInput">REFERENCE</label>
+            <input id="detailSourceInput" class="detail-input" type="text" placeholder="URL, doc #, person, or note">
+          </div>
+
+          <div class="detail-panel-footer">
+            <div id="deleteConfirm" class="delete-confirm hidden">
+              Delete this entry?
+              <button type="button" id="cancelDeleteBtn">Cancel</button>
+              <button type="button" class="danger-link" id="confirmDeleteBtn">Delete</button>
+            </div>
+            <button class="danger-link" id="deleteEntryBtn" type="button">Delete entry</button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Scratch pad drawer -->
+      <section id="scratchPadPanel" class="drawer hidden" aria-label="Scratch pad">
+        <div class="drawer-header">
+          <strong>Scratch pad</strong>
+          <button class="icon-button" data-close-drawer type="button" aria-label="Close scratch pad">×</button>
+        </div>
+        <textarea id="scratchPadText" class="scratch-textarea" aria-label="Scratch Pad"
+          placeholder="Paste or type rough material here. Move useful parts into entries when ready."></textarea>
+        <div class="drawer-actions">
+          <button id="clearScratchPadBtn" type="button">Clear</button>
+        </div>
+      </section>
+
+      <!-- Footer -->
+      <footer class="footer">
+        <span id="footerSummary" class="footer-summary"></span>
+        <span id="footerStatus" class="footer-status" aria-live="polite"></span>
+        <span class="footer-spacer"></span>
+        <span class="footer-hints" aria-label="Keyboard hints">N&thinsp;new&ensp;·&ensp;/&thinsp;search&ensp;·&ensp;S&thinsp;scratch</span>
+        <div class="footer-actions">
+          <button id="sidebarToggleBtn" class="footer-icon-btn" type="button" aria-label="Hide Sidebar" title="Hide Sidebar">
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="2.5" y="3.5" width="11" height="9" rx="1.5" ry="1.5"/>
+              <line x1="6.5" y1="3.5" x2="6.5" y2="12.5"/>
+            </svg>
+          </button>
+          <button id="labelEditorBtn" class="footer-icon-btn" type="button" aria-label="Labels" title="Labels">
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M2.5 3.5v3.9l5.7 5.7a1.4 1.4 0 0 0 2 0l2.9-2.9a1.4 1.4 0 0 0 0-2L7.4 2.5H3.5a1 1 0 0 0-1 1z"/>
+              <circle cx="5.4" cy="5.4" r=".8"/>
+            </svg>
+          </button>
+          <button id="exportBtn" class="footer-icon-btn" type="button" aria-label="Export" title="Export">
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M8 2.5v7"/>
+              <path d="M5.3 7.1 8 9.8l2.7-2.7"/>
+              <path d="M3 11.8v1.7h10v-1.7"/>
+            </svg>
+          </button>
+          <button id="settingsBtn" class="footer-icon-btn" type="button" aria-label="Settings" title="Settings">
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M2.5 4.5h11"/>
+              <path d="M2.5 8h11"/>
+              <path d="M2.5 11.5h11"/>
+              <circle cx="6" cy="4.5" r="1.1"/>
+              <circle cx="10.5" cy="8" r="1.1"/>
+              <circle cx="7.5" cy="11.5" r="1.1"/>
+            </svg>
+          </button>
+        </div>
+      </footer>
+
+      <!-- Floating popovers — moved out of the sidebar so they no longer
+           depend on the sidebar being visible. JS positions each one
+           above its trigger icon in the footer when opened. -->
+
+      <div id="exportPopover" class="popover hidden" role="dialog" aria-label="Export">
+        <div class="legend-header">
+          <strong>Export</strong>
+          <button class="icon-button" id="closeExportBtn" type="button" aria-label="Close export">×</button>
+        </div>
+        <div class="export-actions">
+          <div class="export-group-label">Save / Copy</div>
+          <button type="button" id="exportMarkdownDownloadBtn" class="export-action">
+            <span class="export-action-title">Save Markdown</span>
+            <span class="export-action-sub">Download a local .md file you can keep, edit, or move anywhere.</span>
+          </button>
+          <button type="button" id="exportMarkdownBtn" class="export-action">
+            <span class="export-action-title">Copy as Markdown</span>
+            <span class="export-action-sub">For pasting into a doc, email, or chat. Entries become H2 sections.</span>
+          </button>
+          <button type="button" id="aiReviewBtn" class="export-action">
+            <span class="export-action-title">Copy for AI Review</span>
+            <span class="export-action-sub">Preview and edit a plain-text handoff for ChatGPT, Claude, Codex, or another AI tool.</span>
+          </button>
+
+          <div class="export-group-label">Notepad backup</div>
+          <button type="button" id="exportJsonBtn" class="export-action">
+            <span class="export-action-title">Save notepad backup</span>
+            <span class="export-action-sub">Preserves entries, marker labels/colors, Scratch Pad, goal, and settings.</span>
+          </button>
+          <button type="button" id="jsonRestoreBtn" class="export-action">
+            <span class="export-action-title">Open notepad backup...</span>
+            <span class="export-action-sub">Restore a full-fidelity Reasoning Notepad backup file.</span>
+          </button>
+          <input id="jsonRestoreInput" class="file-input" type="file" accept="application/json,.json">
+
+          <section id="aiReviewPanel" class="ai-review-panel hidden" aria-label="Copy for AI Review">
+            <div class="ai-review-header">
+              <strong>Copy for AI Review</strong>
+              <button id="closeAiReviewBtn" class="icon-button" type="button" aria-label="Close AI review">×</button>
+            </div>
+
+            <label class="ai-review-label" for="aiPresetSelect">AI instructions</label>
+            <select id="aiPresetSelect" class="ai-review-select">
+              <option value="none">No AI instructions</option>
+              <option value="gaps" selected>Find gaps or weak reasoning</option>
+              <option value="summarize">Summarize my notes</option>
+              <option value="challenge">Challenge my reasoning</option>
+              <option value="cleaner">Turn into cleaner wording</option>
+              <option value="questions">Create follow-up questions</option>
+            </select>
+            <div id="aiPresetDescription" class="ai-preset-description"></div>
+
+            <label class="ai-review-check">
+              <input id="aiGuardrailsInput" type="checkbox" checked>
+              Include default guardrails
+            </label>
+
+            <label class="ai-review-label" for="aiCustomInstructions">Additional AI instructions</label>
+            <div class="ai-review-help">Optional: tell the AI what you want it to do with these notes.</div>
+            <textarea id="aiCustomInstructions" class="ai-review-custom" rows="3" placeholder="Keep my uncertainty. Do not make this sound more final or more confident than my notes."></textarea>
+
+            <label class="ai-review-label" for="aiReviewPreview">Editable preview</label>
+            <textarea id="aiReviewPreview" class="ai-review-preview" rows="14" spellcheck="true"></textarea>
+
+            <div class="ai-review-actions">
+              <button id="regenerateAiReviewBtn" type="button">Regenerate preview</button>
+              <button id="copyAiReviewBtn" type="button">Copy preview</button>
+            </div>
+          </section>
+
+          <div id="exportStatus" class="export-status" aria-live="polite"></div>
+        </div>
+      </div>
+
+      <div id="labelEditor" class="popover hidden" role="dialog" aria-label="Edit labels">
+        <div class="legend-header">
+          <strong>Edit labels</strong>
+          <button class="icon-button" id="closeLabelEditorBtn" type="button" aria-label="Close editor">×</button>
+        </div>
+        <div id="labelEditorRows" class="label-editor-rows"></div>
+        <div class="label-editor-actions">
+          <button type="button" id="resetLabelsBtn" class="sidebar-link">Reset to defaults</button>
+        </div>
+      </div>
+
+      <div id="settingsPopover" class="popover hidden" role="dialog" aria-label="Settings">
+        <div class="legend-header">
+          <strong>Settings</strong>
+          <button class="icon-button" id="closeSettingsBtn" type="button" aria-label="Close settings">×</button>
+        </div>
+        <section class="settings-section" aria-labelledby="appearanceSettingsTitle">
+          <h3 id="appearanceSettingsTitle">Appearance</h3>
+          <label class="settings-field">
+            <span>Theme</span>
+            <select id="themeSelect">
+              <option value="system">System</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
+          </label>
+          <label class="settings-toggle">
+            <input id="showTimestampsInput" type="checkbox">
+            Show timestamps
+          </label>
+        </section>
+        <section class="settings-section" aria-labelledby="windowSettingsTitle">
+          <h3 id="windowSettingsTitle">Window</h3>
+          <label class="settings-toggle">
+            <input id="alwaysOnTopInput" type="checkbox">
+            Keep window on top
+          </label>
+        </section>
+        <section class="settings-section" aria-labelledby="dataSettingsTitle">
+          <h3 id="dataSettingsTitle">Data</h3>
+          <div class="settings-actions">
+            <button id="settingsBackupBtn" class="settings-action" type="button">Save notepad backup</button>
+            <button id="settingsOpenBackupBtn" class="settings-action" type="button">Open notepad backup...</button>
+            <button id="openDataFolderBtn" class="settings-action" type="button">Open data folder</button>
+          </div>
+        </section>
+      </div>
+
+    </div>
+
+    <script src="app.js" defer></script>
+  </body>
+</html>
