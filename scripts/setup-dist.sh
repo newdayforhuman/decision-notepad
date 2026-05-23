@@ -4,8 +4,8 @@
 # Why this exists: Tauri's release bundler refuses `frontendDist` paths
 # that include `src-tauri/` (the Rust shell) — and our project structure
 # is flat at the root (index.html, app.js, styles.css, tokens.css alongside
-# src-tauri/, AGENTS.md, etc). So we copy only the runtime files into a
-# clean dist/ folder and point Tauri at that.
+# src-tauri/ and repo metadata). So we copy only the runtime files into a clean
+# dist/ folder and point Tauri at that.
 #
 # Browser-mode workflow is unaffected: opening index.html at the project
 # root still works exactly as before. dist/ is git-ignored.
