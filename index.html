@@ -1,337 +1,839 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Decision Notepad</title>
-    <link rel="icon" href="data:,">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="tokens.css">
-    <link rel="stylesheet" href="styles.css">
-  </head>
-  <body>
-    <div class="app-shell" id="appShell">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Decision Notepad — Think clearly before you decide</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-      <!-- Left rail: sidebar -->
-      <aside class="sidebar" aria-label="Filters and navigation">
-        <div class="sidebar-top">
-          <div class="notepad-switcher">
-            <input id="sessionTitle" class="notepad-title-input" type="text" aria-label="Notepad title">
-          </div>
-          <div class="sidebar-search-wrap">
-            <input id="searchInput" class="sidebar-search" type="search" placeholder="Search titles and notes" aria-label="Search entries">
-          </div>
-          <button id="goalBtn" class="sidebar-goal-btn" type="button" aria-expanded="false">
-            <span class="sidebar-goal-label">Goal</span>
-            <span id="goalPreview" class="sidebar-goal-preview">Add goal</span>
-          </button>
-        </div>
+    :root {
+      --bg:        #f0ede8;
+      --bg-card:   #e8e4de;
+      --text:      #1c1a17;
+      --muted:     #6b6560;
+      --blue:      #1e3a7a;
+      --blue-light:#2d55b8;
+      --orange:    #c45c18;
+      --orange-light:#e07030;
+      --keep:      #4a7c59;
+      --reject:    #a0522d;
+      --question:  #8b6914;
+      --verify:    #4a6fa5;
+      --border:    rgba(0,0,0,0.10);
+      --shadow:    0 8px 40px rgba(0,0,0,0.14);
+      --shadow-sm: 0 2px 12px rgba(0,0,0,0.08);
+      --radius:    12px;
+    }
 
-        <nav class="sidebar-filters" aria-label="Filter entries">
-          <div class="filter-section" id="impressionsSection">
-            <div class="filter-section-header">
-              <span>IMPRESSIONS</span>
-              <button class="legend-trigger" id="legendBtn" type="button" aria-label="Marker legend" aria-expanded="false">?</button>
-            </div>
-            <div id="impressionFilters" class="filter-list"></div>
-          </div>
+    html { scroll-behavior: smooth; }
 
-          <div class="filter-section" id="propertiesSection">
-            <div class="filter-section-header">
-              <span>PROPERTIES</span>
-            </div>
-            <div id="propertyFilters" class="filter-list"></div>
-          </div>
-        </nav>
+    body {
+      font-family: -apple-system, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
 
+    /* ── NAV ────────────────────────────────────── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 5%;
+      height: 60px;
+      background: rgba(240,237,232,0.90);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      color: var(--text);
+      text-decoration: none;
+    }
+    .nav-logo img {
+      width: 30px;
+      height: 30px;
+      border-radius: 7px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .nav-links { display: flex; gap: 28px; align-items: center; }
+    .nav-links a {
+      font-size: 14px;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .btn-download {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--orange);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 7px 16px;
+      border-radius: 8px;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+    .btn-download:hover { background: var(--orange-light); }
 
-        <!-- Legend popover (read-only) -->
-        <div id="legendPopover" class="legend-popover hidden" role="dialog" aria-label="Marker legend">
-          <div class="legend-header">
-            <strong>Markers</strong>
-            <button class="icon-button" id="closeLegendBtn" type="button" aria-label="Close legend">×</button>
-          </div>
-          <table class="legend-table"><tbody id="legendTableBody"></tbody></table>
-        </div>
+    /* ── HERO ───────────────────────────────────── */
+    .hero-wrap {
+      background: linear-gradient(160deg, var(--blue) 0%, #0f2357 100%);
+      padding-bottom: 0;
+    }
+    .hero {
+      text-align: center;
+      padding: 96px 5% 72px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.65);
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 100px;
+      padding: 5px 16px;
+      margin-bottom: 32px;
+    }
+    .hero-badge img {
+      width: 22px;
+      height: 22px;
+      border-radius: 5px;
+    }
+    h1 {
+      font-size: clamp(38px, 5.5vw, 64px);
+      font-weight: 800;
+      letter-spacing: -2px;
+      line-height: 1.06;
+      color: #fff;
+      margin-bottom: 22px;
+    }
+    h1 em {
+      font-style: normal;
+      color: var(--orange-light);
+    }
+    .hero-sub {
+      font-size: clamp(16px, 2vw, 20px);
+      color: rgba(255,255,255,0.7);
+      max-width: 560px;
+      margin: 0 auto 40px;
+      line-height: 1.55;
+    }
+    .hero-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--orange);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      padding: 14px 30px;
+      border-radius: 10px;
+      text-decoration: none;
+      transition: background 0.15s;
+      box-shadow: 0 4px 16px rgba(196,92,24,0.45);
+    }
+    .btn-primary:hover { background: var(--orange-light); }
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.8);
+      font-size: 15px;
+      font-weight: 500;
+      padding: 14px 24px;
+      border-radius: 10px;
+      text-decoration: none;
+      border: 1px solid rgba(255,255,255,0.2);
+      transition: all 0.15s;
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.18); color: #fff; }
 
-        <!-- Goal editor popover -->
-        <div id="goalEditor" class="legend-popover hidden" role="dialog" aria-label="Edit goal">
-          <div class="legend-header">
-            <strong>Goal</strong>
-            <button class="icon-button" id="closeGoalEditorBtn" type="button" aria-label="Close goal editor">×</button>
-          </div>
-          <textarea id="goalText" class="goal-textarea" rows="5" placeholder="What are you trying to decide, find, compare, or verify?"></textarea>
-        </div>
+    /* ── HERO SCREENSHOT ────────────────────────── */
+    .hero-screenshot {
+      margin: 64px auto 0;
+      max-width: 860px;
+      padding: 0 5%;
+    }
+    .screenshot-frame {
+      border-radius: 16px 16px 0 0;
+      overflow: hidden;
+      box-shadow: 0 -4px 60px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.1);
+    }
+    .screenshot-frame img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
 
-      </aside>
+    /* ── MARKERS STRIP ──────────────────────────── */
+    .markers-strip {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 64px 5% 0;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .marker {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 18px;
+      border-radius: 100px;
+      font-size: 14px;
+      font-weight: 600;
+      border: 1.5px solid;
+    }
+    .marker-keep    { color: var(--keep);     border-color: var(--keep);     background: rgba(74,124,89,0.08); }
+    .marker-reject  { color: var(--reject);   border-color: var(--reject);   background: rgba(160,82,45,0.08); }
+    .marker-question{ color: var(--question); border-color: var(--question); background: rgba(139,105,20,0.08); }
+    .marker-verify  { color: var(--verify);   border-color: var(--verify);   background: rgba(74,111,165,0.08); }
+    .marker-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    .marker-keep .marker-dot    { background: var(--keep); }
+    .marker-reject .marker-dot  { background: var(--reject); }
+    .marker-question .marker-dot{ background: var(--question); }
+    .marker-verify .marker-dot  { background: var(--verify); }
+    .markers-label {
+      text-align: center;
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 16px;
+      padding-bottom: 48px;
+    }
 
-      <!-- Main column: top bar + entry list -->
-      <div class="main-col">
-        <header class="top-bar">
-          <div class="capture-wrap">
-            <span class="capture-glyph" aria-hidden="true">⊕</span>
-            <input id="captureInput" class="capture-input" type="text"
-              placeholder="New entry — start typing…" aria-label="Create new entry" autocomplete="off">
-          </div>
-          <div class="top-bar-end">
-            <button class="icon-button top-bar-icon" id="scratchPadBtn" type="button" aria-label="Scratch pad (S)" title="Scratch pad (S)">
-              <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M2.5 13.5l1-3 7-7 2 2-7 7-3 1z"/>
-                <path d="M10.5 3.5l2 2"/>
-              </svg>
-            </button>
-            <button class="icon-button top-bar-icon" id="pinBtn" type="button" aria-label="Pin window above other apps" title="Pin window above other apps (Mod+Shift+P)" aria-pressed="false">
-              <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M10 2l4 4-2.5 1-1.5 3.5L6 6.5l3.5-1.5L10 2z"/>
-                <path d="M6.5 9.5L2 14"/>
-              </svg>
-            </button>
-          </div>
-        </header>
+    /* ── SECTION HEADINGS ───────────────────────── */
+    .section {
+      padding: 100px 5%;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .section-label {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--orange);
+      margin-bottom: 12px;
+    }
+    .section h2 {
+      font-size: clamp(28px, 3.5vw, 40px);
+      font-weight: 800;
+      letter-spacing: -1px;
+      line-height: 1.15;
+      margin-bottom: 14px;
+    }
+    .section-desc {
+      font-size: 17px;
+      color: var(--muted);
+      max-width: 480px;
+      line-height: 1.6;
+      margin-bottom: 48px;
+    }
 
-        <div id="entryList" class="entry-list" role="list" aria-label="Entries" aria-live="polite"></div>
+    /* ── FEATURE ROW ────────────────────────────── */
+    .feature-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 64px;
+      align-items: center;
+    }
+    .feature-row.reverse { direction: rtl; }
+    .feature-row.reverse > * { direction: ltr; }
+    .feature-text {}
+    .feature-img {
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+    }
+    .feature-img img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
 
-        <!-- Notes view: full-width single-entry editor (overlays main column) -->
-        <section class="notes-view hidden" id="notesView" aria-label="Notes editor">
-          <header class="notes-view-header">
-            <button class="icon-button" id="notesViewBack" type="button" aria-label="Back to list">←</button>
-            <span class="notes-view-meta" id="notesViewMeta"></span>
-            <span class="notes-view-hint">Esc to close</span>
-            <button class="icon-button" id="notesViewClose" type="button" aria-label="Close notes view">×</button>
-          </header>
-          <input id="notesViewTitle" class="notes-view-title" type="text" placeholder="Untitled" aria-label="Title" autocomplete="off">
-          <textarea id="notesViewBody" class="notes-view-body" placeholder="Write or paste anything…" aria-label="Note body"></textarea>
-          <footer class="notes-view-footer">
-            <label class="notes-view-source" for="notesViewSource">
-              <span class="notes-view-source-label">Reference</span>
-              <input id="notesViewSource" class="notes-view-source-input" type="text" placeholder="URL, doc #, MLS #, citation, phone — anything you can point back to" autocomplete="off">
-            </label>
-          </footer>
-        </section>
+    /* ── FEATURE GRID ───────────────────────────── */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      margin-top: 48px;
+    }
+    .feature-card {
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      padding: 28px;
+      border: 1px solid var(--border);
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+    .feature-card:hover {
+      box-shadow: var(--shadow-sm);
+      transform: translateY(-2px);
+    }
+    .feature-card-icon {
+      font-size: 24px;
+      margin-bottom: 14px;
+    }
+    .feature-card h3 {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      letter-spacing: -0.3px;
+    }
+    .feature-card p {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    /* ── DIVIDER ────────────────────────────────── */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    /* ── DARK SHOWCASE ──────────────────────────── */
+    .dark-showcase {
+      background: #0f0f0d;
+      padding: 100px 5%;
+    }
+    .dark-showcase-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 64px;
+      align-items: center;
+    }
+    .dark-showcase h2 {
+      font-size: clamp(28px, 3.5vw, 38px);
+      font-weight: 800;
+      letter-spacing: -1px;
+      line-height: 1.15;
+      color: #f0ede8;
+      margin-bottom: 14px;
+    }
+    .dark-showcase p {
+      font-size: 17px;
+      color: rgba(240,237,232,0.5);
+      line-height: 1.6;
+      max-width: 400px;
+    }
+    .dark-showcase .section-label { color: rgba(240,237,232,0.35); }
+
+    /* ── ENTRY SPOTLIGHT ────────────────────────── */
+    .entry-spotlight {
+      padding: 100px 5%;
+      background: #1e3a7a;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .entry-spotlight .section-label { color: var(--orange-light); }
+    .entry-spotlight h2 { color: #fff; }
+    .entry-spotlight .section-desc { color: rgba(255,255,255,0.6); }
+    .entry-spotlight-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1.4fr;
+      gap: 80px;
+      align-items: start;
+    }
+    .entry-spotlight h2 {
+      font-size: clamp(26px, 3vw, 36px);
+      font-weight: 800;
+      letter-spacing: -0.8px;
+      line-height: 1.18;
+      margin-bottom: 14px;
+    }
+    .entry-spotlight .section-desc { max-width: 100%; }
+    .entry-card {
+      background: #fff;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .entry-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .entry-card-marker {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-weight: 600;
+      font-size: 11px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--reject);
+    }
+    .entry-card-marker::before {
+      content: '';
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--reject);
+    }
+    .entry-card-body {
+      padding: 24px 24px 20px;
+    }
+    .entry-card-title {
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      margin-bottom: 16px;
+      line-height: 1.3;
+    }
+    .entry-card-note {
+      font-size: 14px;
+      line-height: 1.7;
+      color: #333;
+    }
+    .entry-card-note p { margin-bottom: 12px; }
+    .entry-card-note p:last-child { margin-bottom: 0; }
+    .entry-card-note ul {
+      margin: 0 0 12px 18px;
+    }
+    .entry-card-note li { margin-bottom: 4px; }
+    .entry-card-footer {
+      padding: 12px 18px;
+      border-top: 1px solid var(--border);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .entry-card-footer span { font-weight: 400; text-transform: none; letter-spacing: 0; }
+
+    /* ── REAL WORLD ─────────────────────────────── */
+    .real-world {
+      padding: 100px 5%;
+      max-width: 1100px;
+      margin: 0 auto;
+      text-align: center;
+    }
+    .real-world h2 {
+      font-size: clamp(28px, 3.5vw, 40px);
+      font-weight: 800;
+      letter-spacing: -1px;
+      margin-bottom: 14px;
+    }
+    .real-world .section-desc {
+      margin: 0 auto 48px;
+    }
+    .real-world-screenshot {
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      max-width: 760px;
+      margin: 0 auto;
+    }
+    .real-world-screenshot img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    /* ── KEYBOARD SHORTCUTS ─────────────────────── */
+    .shortcuts {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 28px;
+    }
+    .shortcut {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    kbd {
+      display: inline-block;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 2px 7px;
+      font-size: 12px;
+      font-family: inherit;
+      font-weight: 600;
+      color: var(--text);
+      box-shadow: 0 1px 0 var(--border);
+    }
+
+    /* ── CTA ────────────────────────────────────── */
+    .cta {
+      text-align: center;
+      padding: 120px 5%;
+      background: linear-gradient(160deg, var(--blue) 0%, #0f2357 100%);
+    }
+    .cta h2 {
+      font-size: clamp(32px, 4vw, 52px);
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      margin-bottom: 18px;
+      color: #fff;
+    }
+    .cta p {
+      font-size: 18px;
+      color: rgba(255,255,255,0.6);
+      margin-bottom: 40px;
+    }
+    .cta .btn-primary {
+      font-size: 17px;
+      padding: 16px 36px;
+    }
+
+    /* ── FOOTER ─────────────────────────────────── */
+    footer {
+      background: #0f2357;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      padding: 32px 5%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    footer p {
+      font-size: 13px;
+      color: rgba(255,255,255,0.35);
+    }
+
+    /* ── RESPONSIVE ─────────────────────────────── */
+    @media (max-width: 700px) {
+      .feature-row, .dark-showcase-inner {
+        grid-template-columns: 1fr;
+        gap: 36px;
+      }
+      .feature-row.reverse { direction: ltr; }
+      .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">
+    <img src="assets/app-icon.png" alt="" onerror="this.style.display='none'" />
+    Decision Notepad
+  </a>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#how-it-works">How it works</a>
+    <a href="https://github.com/newdayforhuman/decision-notepad/releases/download/v0.1.0/Decision.Notepad_0.1.0_aarch64.dmg" class="btn-download">Download</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero-wrap">
+<section class="hero">
+  <div class="hero-badge">
+    <img src="assets/app-icon.png" alt="" onerror="this.style.display='none'" />
+    Desktop App · macOS
+  </div>
+  <h1>Think clearly<br>before you <em>decide.</em></h1>
+  <p class="hero-sub">
+    Decision Notepad captures every angle of a decision — keeps, rejects, open questions, things to verify — so nothing gets lost and you can move forward with confidence.
+  </p>
+  <div class="hero-actions">
+    <a href="https://github.com/newdayforhuman/decision-notepad/releases/download/v0.1.0/Decision.Notepad_0.1.0_aarch64.dmg" class="btn-primary">
+      ↓ Download for Mac
+    </a>
+    <a href="#how-it-works" class="btn-secondary">See how it works</a>
+  </div>
+</section>
+
+<div class="hero-screenshot">
+  <div class="screenshot-frame">
+    <img src="assets/hero-light.png" alt="Decision Notepad main view — light mode" />
+  </div>
+</div>
+</div><!-- end hero-wrap -->
+
+<!-- MARKERS STRIP -->
+<div class="markers-strip">
+  <span class="marker marker-keep"><span class="marker-dot"></span>Keep</span>
+  <span class="marker marker-reject"><span class="marker-dot"></span>Reject</span>
+  <span class="marker marker-question"><span class="marker-dot"></span>Question</span>
+  <span class="marker marker-verify"><span class="marker-dot"></span>Verify</span>
+</div>
+<p class="markers-label">Four markers. One question per entry. Total clarity.</p>
+
+<div class="divider"></div>
+
+<!-- FEATURE: CAPTURE -->
+<section class="section" id="how-it-works">
+  <div class="feature-row">
+    <div class="feature-text">
+      <p class="section-label">Capture</p>
+      <h2>Every thought gets a place.</h2>
+      <p class="section-desc">
+        Type a new entry and instantly start capturing. Each entry holds a title, a note, an optional reference, and a marker — all the context you need to revisit any thought clearly.
+      </p>
+      <div class="shortcuts">
+        <span class="shortcut"><kbd>N</kbd> new entry</span>
+        <span class="shortcut"><kbd>/</kbd> search</span>
+        <span class="shortcut"><kbd>S</kbd> scratch pad</span>
       </div>
-
-      <!-- Right panel: detail (closed by default) -->
-      <aside class="detail-panel hidden" id="detailPanel" aria-label="Entry detail">
-        <header class="detail-panel-header">
-          <div class="detail-panel-meta">
-            <div id="detailPanelTitle" class="detail-panel-title"></div>
-            <div id="detailPanelStatus" class="detail-panel-status"></div>
-            <div id="detailPanelTimestamp" class="detail-panel-timestamp"></div>
-          </div>
-          <button class="icon-button" id="closeDetailBtn" type="button" aria-label="Close detail">×</button>
-        </header>
-
-        <div class="detail-panel-body">
-          <div class="detail-field">
-            <label class="detail-label" for="detailTitleInput">TITLE</label>
-            <input id="detailTitleInput" class="detail-input" type="text">
-          </div>
-
-          <div class="detail-field">
-            <label class="detail-label" for="detailBodyInput">NOTE</label>
-            <textarea id="detailBodyInput" class="detail-textarea" rows="6"></textarea>
-          </div>
-
-          <div class="detail-field">
-            <label class="detail-label">MARKER</label>
-            <div class="marker-segmented" id="markerSegmented" role="group" aria-label="Set marker"></div>
-            <button class="clear-marker-link hidden" id="clearMarkerBtn" type="button">Clear marker</button>
-          </div>
-
-          <div class="detail-field">
-            <label class="detail-label" for="detailSourceInput">REFERENCE</label>
-            <input id="detailSourceInput" class="detail-input" type="text" placeholder="URL, doc #, person, or note">
-          </div>
-
-          <div class="detail-panel-footer">
-            <div id="deleteConfirm" class="delete-confirm hidden">
-              Delete this entry?
-              <button type="button" id="cancelDeleteBtn">Cancel</button>
-              <button type="button" class="danger-link" id="confirmDeleteBtn">Delete</button>
-            </div>
-            <button class="danger-link" id="deleteEntryBtn" type="button">Delete entry</button>
-          </div>
-        </div>
-      </aside>
-
-      <!-- Scratch pad drawer -->
-      <section id="scratchPadPanel" class="drawer hidden" aria-label="Scratch pad">
-        <div class="drawer-header">
-          <strong>Scratch pad</strong>
-          <button class="icon-button" data-close-drawer type="button" aria-label="Close scratch pad">×</button>
-        </div>
-        <textarea id="scratchPadText" class="scratch-textarea" aria-label="Scratch Pad"
-          placeholder="Paste or type rough material here. Move useful parts into entries when ready."></textarea>
-        <div class="drawer-actions">
-          <button id="clearScratchPadBtn" type="button">Clear</button>
-        </div>
-      </section>
-
-      <!-- Footer -->
-      <footer class="footer">
-        <span id="footerSummary" class="footer-summary"></span>
-        <span id="footerStatus" class="footer-status" aria-live="polite"></span>
-        <span class="footer-spacer"></span>
-        <span class="footer-hints" aria-label="Keyboard hints">N&thinsp;new&ensp;·&ensp;/&thinsp;search&ensp;·&ensp;S&thinsp;scratch</span>
-        <div class="footer-actions">
-          <button id="sidebarToggleBtn" class="footer-icon-btn" type="button" aria-label="Hide Sidebar" title="Hide Sidebar">
-            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <rect x="2.5" y="3.5" width="11" height="9" rx="1.5" ry="1.5"/>
-              <line x1="6.5" y1="3.5" x2="6.5" y2="12.5"/>
-            </svg>
-          </button>
-          <button id="labelEditorBtn" class="footer-icon-btn" type="button" aria-label="Labels" title="Labels">
-            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M2.5 3.5v3.9l5.7 5.7a1.4 1.4 0 0 0 2 0l2.9-2.9a1.4 1.4 0 0 0 0-2L7.4 2.5H3.5a1 1 0 0 0-1 1z"/>
-              <circle cx="5.4" cy="5.4" r=".8"/>
-            </svg>
-          </button>
-          <button id="exportBtn" class="footer-icon-btn" type="button" aria-label="Export" title="Export">
-            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M8 2.5v7"/>
-              <path d="M5.3 7.1 8 9.8l2.7-2.7"/>
-              <path d="M3 11.8v1.7h10v-1.7"/>
-            </svg>
-          </button>
-          <button id="settingsBtn" class="footer-icon-btn" type="button" aria-label="Settings" title="Settings">
-            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M2.5 4.5h11"/>
-              <path d="M2.5 8h11"/>
-              <path d="M2.5 11.5h11"/>
-              <circle cx="6" cy="4.5" r="1.1"/>
-              <circle cx="10.5" cy="8" r="1.1"/>
-              <circle cx="7.5" cy="11.5" r="1.1"/>
-            </svg>
-          </button>
-        </div>
-      </footer>
-
-      <!-- Floating popovers — moved out of the sidebar so they no longer
-           depend on the sidebar being visible. JS positions each one
-           above its trigger icon in the footer when opened. -->
-
-      <div id="exportPopover" class="popover hidden" role="dialog" aria-label="Export">
-        <div class="legend-header">
-          <strong>Export</strong>
-          <button class="icon-button" id="closeExportBtn" type="button" aria-label="Close export">×</button>
-        </div>
-        <div class="export-actions">
-          <div class="export-group-label">Save / Copy</div>
-          <button type="button" id="exportMarkdownDownloadBtn" class="export-action">
-            <span class="export-action-title">Save Markdown</span>
-            <span class="export-action-sub">Download a local .md file you can keep, edit, or move anywhere.</span>
-          </button>
-          <button type="button" id="exportMarkdownBtn" class="export-action">
-            <span class="export-action-title">Copy as Markdown</span>
-            <span class="export-action-sub">For pasting into a doc, email, or chat. Entries become H2 sections.</span>
-          </button>
-          <button type="button" id="aiReviewBtn" class="export-action">
-            <span class="export-action-title">Copy for AI Review</span>
-            <span class="export-action-sub">Preview and edit a plain-text handoff for ChatGPT, Claude, Codex, or another AI tool.</span>
-          </button>
-
-          <div class="export-group-label">Notepad backup</div>
-          <button type="button" id="exportJsonBtn" class="export-action">
-            <span class="export-action-title">Save notepad backup</span>
-            <span class="export-action-sub">Preserves entries, marker labels/colors, Scratch Pad, goal, and settings.</span>
-          </button>
-          <button type="button" id="jsonRestoreBtn" class="export-action">
-            <span class="export-action-title">Open notepad backup...</span>
-            <span class="export-action-sub">Restore a full-fidelity Reasoning Notepad backup file.</span>
-          </button>
-          <input id="jsonRestoreInput" class="file-input" type="file" accept="application/json,.json">
-
-          <section id="aiReviewPanel" class="ai-review-panel hidden" aria-label="Copy for AI Review">
-            <div class="ai-review-header">
-              <strong>Copy for AI Review</strong>
-              <button id="closeAiReviewBtn" class="icon-button" type="button" aria-label="Close AI review">×</button>
-            </div>
-
-            <label class="ai-review-label" for="aiPresetSelect">AI instructions</label>
-            <select id="aiPresetSelect" class="ai-review-select">
-              <option value="none">No AI instructions</option>
-              <option value="gaps" selected>Find gaps or weak reasoning</option>
-              <option value="summarize">Summarize my notes</option>
-              <option value="challenge">Challenge my reasoning</option>
-              <option value="cleaner">Turn into cleaner wording</option>
-              <option value="questions">Create follow-up questions</option>
-            </select>
-            <div id="aiPresetDescription" class="ai-preset-description"></div>
-
-            <label class="ai-review-check">
-              <input id="aiGuardrailsInput" type="checkbox" checked>
-              Include default guardrails
-            </label>
-
-            <label class="ai-review-label" for="aiCustomInstructions">Additional AI instructions</label>
-            <div class="ai-review-help">Optional: tell the AI what you want it to do with these notes.</div>
-            <textarea id="aiCustomInstructions" class="ai-review-custom" rows="3" placeholder="Keep my uncertainty. Do not make this sound more final or more confident than my notes."></textarea>
-
-            <label class="ai-review-label" for="aiReviewPreview">Editable preview</label>
-            <textarea id="aiReviewPreview" class="ai-review-preview" rows="14" spellcheck="true"></textarea>
-
-            <div class="ai-review-actions">
-              <button id="regenerateAiReviewBtn" type="button">Regenerate preview</button>
-              <button id="copyAiReviewBtn" type="button">Copy preview</button>
-            </div>
-          </section>
-
-          <div id="exportStatus" class="export-status" aria-live="polite"></div>
-        </div>
-      </div>
-
-      <div id="labelEditor" class="popover hidden" role="dialog" aria-label="Edit labels">
-        <div class="legend-header">
-          <strong>Edit labels</strong>
-          <button class="icon-button" id="closeLabelEditorBtn" type="button" aria-label="Close editor">×</button>
-        </div>
-        <div id="labelEditorRows" class="label-editor-rows"></div>
-        <div class="label-editor-actions">
-          <button type="button" id="resetLabelsBtn" class="sidebar-link">Reset to defaults</button>
-        </div>
-      </div>
-
-      <div id="settingsPopover" class="popover hidden" role="dialog" aria-label="Settings">
-        <div class="legend-header">
-          <strong>Settings</strong>
-          <button class="icon-button" id="closeSettingsBtn" type="button" aria-label="Close settings">×</button>
-        </div>
-        <section class="settings-section" aria-labelledby="appearanceSettingsTitle">
-          <h3 id="appearanceSettingsTitle">Appearance</h3>
-          <label class="settings-field">
-            <span>Theme</span>
-            <select id="themeSelect">
-              <option value="system">System</option>
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
-            </select>
-          </label>
-          <label class="settings-toggle">
-            <input id="showTimestampsInput" type="checkbox">
-            Show timestamps
-          </label>
-        </section>
-        <section class="settings-section" aria-labelledby="windowSettingsTitle">
-          <h3 id="windowSettingsTitle">Window</h3>
-          <label class="settings-toggle">
-            <input id="alwaysOnTopInput" type="checkbox">
-            Keep window on top
-          </label>
-        </section>
-        <section class="settings-section" aria-labelledby="dataSettingsTitle">
-          <h3 id="dataSettingsTitle">Data</h3>
-          <div class="settings-actions">
-            <button id="settingsBackupBtn" class="settings-action" type="button">Save notepad backup</button>
-            <button id="settingsOpenBackupBtn" class="settings-action" type="button">Open notepad backup...</button>
-            <button id="openDataFolderBtn" class="settings-action" type="button">Open data folder</button>
-          </div>
-        </section>
-      </div>
-
     </div>
+    <div class="feature-img">
+      <img src="assets/detail-panel.png" alt="Entry detail panel" />
+    </div>
+  </div>
+</section>
 
-    <script src="app.js" defer></script>
-  </body>
+<div class="divider"></div>
+
+<!-- FEATURE: SCRATCH PAD -->
+<section class="section">
+  <div class="feature-row reverse">
+    <div class="feature-text">
+      <p class="section-label">Scratch Pad</p>
+      <h2>Rough thoughts welcome.</h2>
+      <p class="section-desc">
+        Not ready to commit an idea to an entry? The scratch pad is always one keystroke away — a loose workspace for fragments, half-formed hunches, and things you want to remember but aren't sure count yet.
+      </p>
+    </div>
+    <div class="feature-img">
+      <img src="assets/scratch-pad.png" alt="Scratch pad view" />
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- FEATURE: LABELS / MARKERS -->
+<section class="section" id="features">
+  <div class="feature-row">
+    <div class="feature-text">
+      <p class="section-label">Markers</p>
+      <h2>Not all thoughts are equal.</h2>
+      <p class="section-desc">
+        Mark each entry as <strong>Keep</strong>, <strong>Reject</strong>, <strong>Question</strong>, or <strong>Verify</strong>. Filter by marker to see what you've decided, what's uncertain, and what still needs work. Customize colors to match how you think.
+      </p>
+    </div>
+    <div class="feature-img">
+      <img src="assets/label-editor.png" alt="Label editor — customizable markers" />
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- FEATURE: NOTES VIEW -->
+<section class="section">
+  <div class="feature-row reverse">
+    <div class="feature-text">
+      <p class="section-label">Focus View</p>
+      <h2>Read an entry without distraction.</h2>
+      <p class="section-desc">
+        Open any entry into a full-screen notes view. Just the title, the note, and the reference — nothing else competing for your attention. Esc to return.
+      </p>
+    </div>
+    <div class="feature-img">
+      <img src="assets/notes-view-full.png" alt="Full-screen notes view — real entry" />
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- FEATURE: AI REVIEW -->
+<section class="section">
+  <div class="feature-row">
+    <div class="feature-text">
+      <p class="section-label">AI Review</p>
+      <h2>Find what you're missing.</h2>
+      <p class="section-desc">
+        Copy your notepad to an AI with a single click. Choose from built-in instructions like "Find gaps or weak reasoning" — or write your own. Get an outside perspective on your thinking before you commit to a direction.
+      </p>
+    </div>
+    <div class="feature-img">
+      <img src="assets/ai-review.png" alt="AI Review export panel" />
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- FEATURE: EXPORT -->
+<section class="section">
+  <div class="feature-row reverse">
+    <div class="feature-text">
+      <p class="section-label">Export</p>
+      <h2>Your notes, your format.</h2>
+      <p class="section-desc">
+        Export a full notepad backup or copy a structured preview for sharing. Every export is clean, readable, and ready to paste anywhere.
+      </p>
+    </div>
+    <div class="feature-img">
+      <img src="assets/export.png" alt="Export popover" />
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- MORE FEATURES GRID -->
+<section class="section">
+  <div style="text-align:center; margin-bottom: 8px;">
+    <p class="section-label" style="margin-bottom: 12px;">Everything else</p>
+    <h2>Built to stay out of your way.</h2>
+    <p class="section-desc" style="margin: 0 auto;">Small, considered details that make the app feel right.</p>
+  </div>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-card-icon">🔍</div>
+      <h3>Instant Search</h3>
+      <p>Search titles and notes across all entries. Results update as you type — no waiting.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-card-icon">🏷️</div>
+      <h3>Sidebar Filtering</h3>
+      <p>Filter by marker or by whether an entry has a reference. See exactly what you decided and what's still open.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-card-icon">🎯</div>
+      <h3>Session Goal</h3>
+      <p>Set a goal for your notepad session — visible in the sidebar to keep you anchored to what actually matters.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-card-icon">🕐</div>
+      <h3>Timestamps</h3>
+      <p>Optional timestamp display shows when each entry was created — useful for longer or multi-day decision sessions.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-card-icon">💾</div>
+      <h3>Backup & Restore</h3>
+      <p>Save a full backup of your notepad anytime. Restore it later — no account, no cloud, no surprises.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-card-icon">📌</div>
+      <h3>Always on Top</h3>
+      <p>Keep the window floating above other apps while you research, read, or discuss. Think alongside your work.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ENTRY SPOTLIGHT -->
+<div class="entry-spotlight">
+  <div class="entry-spotlight-inner">
+    <div>
+      <p class="section-label">What an entry looks like</p>
+      <h2>Your thinking, fully visible.</h2>
+      <p class="section-desc">
+        Entries aren't just notes. They're structured thinking — a title that names the idea, a note that unpacks it honestly, a marker that records your verdict, and a reference that anchors it to reality. This is a real entry, written by someone deciding whether to go full-time on their product.
+      </p>
+    </div>
+    <div class="entry-card">
+      <div class="entry-card-header">
+        <span class="entry-card-marker">Reject</span>
+        <span>Honest self-assessment</span>
+      </div>
+      <div class="entry-card-body">
+        <div class="entry-card-title">'One more feature' thinking — the product isn't the bottleneck</div>
+        <div class="entry-card-note">
+          <p>I keep thinking if I just built the Slack integration or the API, growth would unlock. But churn is low and NPS is high. The bottleneck is time spent on growth, not the product. More features ≠ more revenue.</p>
+          <p>I've been telling myself this story for about eight months now. First it was the API — 'once enterprise customers can integrate, sales will get easier.' Then it was the Slack integration — 'that's the distribution channel, that's how it spreads.' Then it was multi-user support. Then custom domains. Then webhooks.</p>
+          <p>The customers I have didn't come because of any feature. They came because someone mentioned the product in a Slack community, or because they Googled a specific problem and landed on a blog post I wrote in February, or because a friend sent them a link. Word of mouth and one piece of content I almost didn't write.</p>
+          <p>The data is pretty clear:</p>
+          <ul>
+            <li>Churn: 2.8% monthly — that's not a product problem</li>
+            <li>NPS: 62 — people who use it like it</li>
+            <li>Activation rate: 71% reach the key action in week 1 — onboarding isn't broken</li>
+            <li>New MRR sources this quarter: 2 from organic search, 1 from a Reddit mention, 0 from any feature launch</li>
+          </ul>
+          <p>This entry is a reject not because the features are bad ideas. They're fine. It's a reject because 'I need to build X before I can grow' is a story I keep telling myself to avoid harder work. Leaving my job to do more of the same comfortable work would be a very expensive mistake.</p>
+        </div>
+      </div>
+      <div class="entry-card-footer">Reference &nbsp;<span>Honest self-assessment</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- DARK MODE SHOWCASE -->
+<div class="dark-showcase">
+  <div class="dark-showcase-inner">
+    <div>
+      <p class="section-label">Dark Mode</p>
+      <h2>Works the way you work.</h2>
+      <p>Full dark mode — switch between light and dark from settings. Your entries look just as clear at midnight as they do at noon.</p>
+    </div>
+    <div class="feature-img">
+      <img src="assets/hero-dark.png" alt="Decision Notepad — dark mode" />
+    </div>
+  </div>
+</div>
+
+<!-- REAL-WORLD USE CASE -->
+<section class="real-world">
+  <p class="section-label">In practice</p>
+  <h2>Real decisions. Real stakes.</h2>
+  <p class="section-desc">
+    Whether you're evaluating a job offer, assessing a business risk, or working through a major life choice — Decision Notepad keeps every consideration organized and visible.
+  </p>
+  <div class="real-world-screenshot">
+    <img src="assets/notes-view-full.png" alt="A real entry in Decision Notepad's focus view" />
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- CTA -->
+<section class="cta" id="download">
+  <h2>Start thinking clearly.</h2>
+  <p>Free to download. No account. No sync. Just your thoughts.</p>
+  <a href="https://github.com/newdayforhuman/decision-notepad/releases/download/v0.1.0/Decision.Notepad_0.1.0_aarch64.dmg" class="btn-primary">↓ Download Decision Notepad</a>
+  <p style="margin-top:14px; font-size:13px; opacity:0.55;">macOS · Apple Silicon · v0.1.0 · <a href="https://github.com/newdayforhuman/decision-notepad/releases/tag/v0.1.0" style="color:inherit; text-decoration:underline;">All releases</a></p>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p>© 2026 Decision Notepad</p>
+  <p>Made for people who think before they leap.</p>
+</footer>
+
+</body>
 </html>
